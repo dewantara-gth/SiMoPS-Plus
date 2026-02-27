@@ -5,7 +5,7 @@
     </button>
     
     <div class="flex items-center space-x-2">
-        <span class="text-sm font-medium text-gray-600">Solar Monitor</span>
+        <span class="text-sm font-medium text-gray-600">SiMoPS++</span>
         <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
             <i class="fas fa-solar-panel text-blue-600 text-sm"></i>
         </div>
@@ -35,7 +35,7 @@
                         <i class="fas fa-solar-panel text-white text-xl"></i>
                     </div>
                     <div>
-                        <h2 class="text-white font-semibold text-lg">Solar Monitor</h2>
+                        <h2 class="text-white font-semibold text-lg">SiMoPS++</h2>
                         <p class="text-blue-100 text-xs">Panel Surya System</p>
                     </div>
                 </div>
