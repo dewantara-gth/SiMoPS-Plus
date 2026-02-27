@@ -1,0 +1,168 @@
+/* Fix untuk mobile header */
+@media (max-width: 1024px) {
+
+    /* Memberi ruang untuk judul halaman */
+    .page-title {
+        margin-left: 2.5rem;
+    }
+
+    /* Adjust padding main content */
+    main {
+        padding-top: 1rem;
+    }
+
+    /* Fix untuk status badge di mobile */
+    #device-status {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+    }
+
+    /* Animasi smooth untuk sidebar */
+    #sidebar {
+        transition: transform 0.3s ease-in-out;
+    }
+
+    /* Mencegah content shift saat sidebar terbuka */
+    body.sidebar-open {
+        overflow: hidden;
+    }
+}
+
+/* Status badge styling */
+#device-status i {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Hover effect untuk menu toggle */
+#menu-toggle {
+    transition: all 0.2s;
+}
+
+#menu-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Close button styling */
+#close-sidebar {
+    transition: all 0.2s;
+}
+
+#close-sidebar:hover {
+    transform: rotate(90deg);
+}
+
+/* Notification Dropdown Styles */
+#notification-dropdown {
+    transform-origin: top right;
+    animation: dropdownFade 0.2s ease;
+}
+
+@keyframes dropdownFade {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Notification Item Hover */
+.notification-item {
+    transition: all 0.2s;
+}
+
+.notification-item:hover {
+    transform: translateX(2px);
+}
+
+/* Bell Animation */
+@keyframes bellRing {
+    0%, 100% { transform: rotate(0); }
+    20%, 60% { transform: rotate(15deg); }
+    40%, 80% { transform: rotate(-15deg); }
+}
+
+.fa-bell {
+    transition: transform 0.2s;
+}
+
+#notification-bell:hover .fa-bell {
+    animation: bellRing 0.5s ease;
+}
+
+/* Unread Badge Animation */
+#notification-badge {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Scrollbar for notification list */
+#notification-list {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+#notification-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+#notification-list::-webkit-scrollbar-track {
+    background: #f7fafc;
+}
+
+#notification-list::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 20px;
+}
+
+/* Time text styling */
+.notification-item .text-gray-400 {
+    font-size: 0.7rem;
+}
+
+/* View full notification link */
+.notification-item a {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.notification-item:hover a {
+    opacity: 1;
+}
+
+/* Mark all read button */
+#mark-all-read {
+    transition: all 0.2s;
+}
+
+#mark-all-read:hover {
+    transform: translateY(-1px);
+}
