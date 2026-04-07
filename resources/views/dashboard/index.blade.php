@@ -167,6 +167,8 @@
         const ctxTegangan = document.getElementById('chartTegangan').getContext('2d');
         const ctxArus = document.getElementById('chartArus').getContext('2d');
         const ctxSOC = document.getElementById('chartSOC').getContext('2d');
+        const chartTextColor = '#cbd5e1';
+        const chartGridColor = 'rgba(148, 163, 184, 0.2)';
         
         // Chart Tegangan
         chartTegangan = new Chart(ctxTegangan, {
@@ -185,13 +187,35 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: chartTextColor
+                        }
+                    }
+                },
                 scales: {
+                    x: {
+                        ticks: {
+                            color: chartTextColor
+                        },
+                        grid: {
+                            color: chartGridColor
+                        }
+                    },
                     y: {
                         beginAtZero: true,
                         max: 20,
+                        ticks: {
+                            color: chartTextColor
+                        },
+                        grid: {
+                            color: chartGridColor
+                        },
                         title: {
                             display: true,
-                            text: 'Tegangan (V)'
+                            text: 'Tegangan (V)',
+                            color: chartTextColor
                         }
                     }
                 }
@@ -215,13 +239,35 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: chartTextColor
+                        }
+                    }
+                },
                 scales: {
+                    x: {
+                        ticks: {
+                            color: chartTextColor
+                        },
+                        grid: {
+                            color: chartGridColor
+                        }
+                    },
                     y: {
                         beginAtZero: true,
                         max: 5,
+                        ticks: {
+                            color: chartTextColor
+                        },
+                        grid: {
+                            color: chartGridColor
+                        },
                         title: {
                             display: true,
-                            text: 'Arus (A)'
+                            text: 'Arus (A)',
+                            color: chartTextColor
                         }
                     }
                 }
@@ -245,13 +291,35 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: chartTextColor
+                        }
+                    }
+                },
                 scales: {
+                    x: {
+                        ticks: {
+                            color: chartTextColor
+                        },
+                        grid: {
+                            color: chartGridColor
+                        }
+                    },
                     y: {
                         beginAtZero: true,
                         max: 100,
+                        ticks: {
+                            color: chartTextColor
+                        },
+                        grid: {
+                            color: chartGridColor
+                        },
                         title: {
                             display: true,
-                            text: 'SOC (%)'
+                            text: 'SOC (%)',
+                            color: chartTextColor
                         }
                     }
                 }

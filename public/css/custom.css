@@ -166,3 +166,265 @@
 #mark-all-read:hover {
     transform: translateY(-1px);
 }
+
+.dark body {
+    background-color: #0b1220;
+    color: #e2e8f0;
+}
+
+.dark .bg-gray-100 {
+    background-color: #0b1220 !important;
+}
+
+.dark .bg-gray-50 {
+    background-color: #0f172a !important;
+}
+
+.dark .bg-white {
+    background-color: #0f172a !important;
+}
+
+.dark .bg-white\/90 {
+    background-color: rgba(15, 23, 42, 0.9) !important;
+}
+
+.dark .bg-gray-200 {
+    background-color: #1e293b !important;
+}
+
+.dark .bg-gray-600 {
+    background-color: rgba(2, 6, 23, 0.8) !important;
+}
+
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+    color: #e2e8f0 !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-gray-400 {
+    color: #94a3b8 !important;
+}
+
+.dark .text-gray-300 {
+    color: #64748b !important;
+}
+
+.dark .border-gray-200,
+.dark .border-gray-300 {
+    border-color: #334155 !important;
+}
+
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #334155 !important;
+}
+
+.dark .hover\:bg-gray-50:hover {
+    background-color: rgba(148, 163, 184, 0.08) !important;
+}
+
+.dark .hover\:bg-blue-50:hover {
+    background-color: rgba(59, 130, 246, 0.14) !important;
+}
+
+.dark .group-hover\:bg-blue-100 {
+    background-color: rgba(59, 130, 246, 0.22) !important;
+}
+
+.dark .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.10) !important;
+}
+
+.dark .bg-green-50 {
+    background-color: rgba(34, 197, 94, 0.10) !important;
+}
+
+.dark .bg-yellow-50 {
+    background-color: rgba(234, 179, 8, 0.12) !important;
+}
+
+.dark .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.10) !important;
+}
+
+.dark .bg-blue-100 {
+    background-color: rgba(59, 130, 246, 0.18) !important;
+}
+
+.dark .bg-green-100 {
+    background-color: rgba(34, 197, 94, 0.18) !important;
+}
+
+.dark .bg-yellow-100 {
+    background-color: rgba(234, 179, 8, 0.20) !important;
+}
+
+.dark .bg-red-100 {
+    background-color: rgba(239, 68, 68, 0.18) !important;
+}
+
+.dark .bg-orange-100 {
+    background-color: rgba(249, 115, 22, 0.18) !important;
+}
+
+.dark .bg-indigo-50 {
+    background-color: rgba(99, 102, 241, 0.10) !important;
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+    background-color: #0b1220;
+    color: #e2e8f0;
+    border-color: #334155;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+    border-color: #3b82f6;
+    outline: none;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: #64748b;
+}
+
+.dark .daterangepicker {
+    background-color: #0f172a;
+    border-color: #334155;
+}
+
+.dark .daterangepicker:before {
+    border-bottom-color: #334155;
+}
+
+.dark .daterangepicker:after {
+    border-bottom-color: #0f172a;
+}
+
+.dark .daterangepicker .calendar-table {
+    background-color: #0f172a;
+    border-color: #334155;
+}
+
+.dark .daterangepicker .calendar-table th,
+.dark .daterangepicker .calendar-table td {
+    color: #e2e8f0;
+}
+
+.dark .daterangepicker td.in-range {
+    background-color: rgba(59, 130, 246, 0.18) !important;
+    color: #e2e8f0 !important;
+}
+
+.dark .daterangepicker td.active,
+.dark .daterangepicker td.active:hover {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+}
+
+.dark .daterangepicker td.start-date,
+.dark .daterangepicker td.end-date {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+}
+
+.dark .daterangepicker td.available:hover,
+.dark .daterangepicker th.available:hover {
+    background-color: rgba(148, 163, 184, 0.10) !important;
+}
+
+.dark .daterangepicker .ranges li {
+    background-color: transparent !important;
+    color: #e2e8f0 !important;
+}
+
+.dark .daterangepicker .ranges li:hover {
+    background-color: rgba(148, 163, 184, 0.10) !important;
+}
+
+.dark .daterangepicker .ranges li.active {
+    background-color: rgba(59, 130, 246, 0.18) !important;
+    color: #e2e8f0 !important;
+}
+
+.dark .daterangepicker .drp-buttons .btn {
+    background-color: #0b1220 !important;
+    color: #e2e8f0 !important;
+    border-color: #334155 !important;
+}
+
+.dark .daterangepicker .drp-buttons .btn:hover {
+    background-color: rgba(148, 163, 184, 0.10) !important;
+}
+
+.dark .daterangepicker td.off,
+.dark .daterangepicker td.off.in-range,
+.dark .daterangepicker td.off.start-date,
+.dark .daterangepicker td.off.end-date {
+    background-color: transparent;
+    color: #64748b;
+}
+
+.dark .daterangepicker .drp-buttons {
+    border-top-color: #334155;
+}
+
+.dark .daterangepicker .drp-selected {
+    color: #94a3b8;
+}
+
+.dark #notification-list {
+    scrollbar-color: #475569 #0f172a;
+}
+
+.dark #notification-list::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+.dark #notification-list::-webkit-scrollbar-thumb {
+    background-color: #475569;
+}
+
+.dark #sidebar nav {
+    scrollbar-color: #475569 #0f172a !important;
+}
+
+.dark #sidebar nav::-webkit-scrollbar-track {
+    background: #0f172a !important;
+}
+
+.dark #sidebar nav::-webkit-scrollbar-thumb {
+    background-color: #475569 !important;
+}
+
+.dark .lg\:hidden.fixed {
+    background-color: rgba(15, 23, 42, 0.9) !important;
+}
+
+.dark #sidebar {
+    border-right: 1px solid #334155 !important;
+}
+
+.dark .group:hover .bg-gray-100 {
+    background-color: rgba(59, 130, 246, 0.18) !important;
+}
+
+.dark .from-blue-50 {
+    --tw-gradient-from: #0f172a !important;
+    --tw-gradient-to: rgb(15 23 42 / 0) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.dark .to-indigo-50 {
+    --tw-gradient-to: #0b1220 !important;
+}
+
+.dark .border-blue-100,
+.dark .border-indigo-100 {
+    border-color: #334155 !important;
+}

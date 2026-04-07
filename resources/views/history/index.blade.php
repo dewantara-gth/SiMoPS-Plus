@@ -118,7 +118,7 @@
     let itemsPerPage = 10;
     let filteredData = [];
     let allData = [];
-    let currentFilter = { start: null, end: null };
+    let currentFilter = { startDate: null, endDate: null };
     
     document.addEventListener('DOMContentLoaded', function() {
         // Generate dummy data dan urutkan dari terbaru ke terlama
@@ -137,14 +137,14 @@
         
         $('#date-range').on('apply.daterangepicker', function(ev, picker) {
             $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
-            currentFilter.start = picker.startDate;
-            currentFilter.end = picker.endDate;
+            currentFilter.startDate = picker.startDate;
+            currentFilter.endDate = picker.endDate;
         });
         
         $('#date-range').on('cancel.daterangepicker', function(ev, picker) {
             $(this).val('');
-            currentFilter.start = null;
-            currentFilter.end = null;
+            currentFilter.startDate = null;
+            currentFilter.endDate = null;
         });
         
         // Event listeners
@@ -165,17 +165,20 @@
     // Fungsi untuk mengurutkan data berdasarkan waktu
     function sortDataByDate(order = 'desc') {
         allData.sort((a, b) => {
-            const dateA = new Date(a.waktu.replace(/-/g, '/'));
-            const dateB = new Date(b.waktu.replace(/-/g, '/'));
+            const dateA = moment(a.waktu, 'YYYY-MM-DD HH:mm:ss').toDate();
+            const dateB = moment(b.waktu, 'YYYY-MM-DD HH:mm:ss').toDate();
             return order === 'desc' ? dateB - dateA : dateA - dateB;
         });
     }
     
     function applyFilter() {
-        if (currentFilter.start && currentFilter.end) {
+        if (currentFilter.startDate && currentFilter.endDate) {
+            const start = moment(currentFilter.startDate).startOf('day');
+            const end = moment(currentFilter.endDate).endOf('day');
+
             filteredData = allData.filter(item => {
                 const itemDate = moment(item.waktu, 'YYYY-MM-DD HH:mm:ss');
-                return itemDate.isBetween(currentFilter.start, currentFilter.end, 'day', '[]');
+                return itemDate.isBetween(start, end, 'second', '[]');
             });
         } else {
             filteredData = [...allData];
@@ -186,8 +189,8 @@
     
     function resetFilter() {
         $('#date-range').val('');
-        currentFilter.start = null;
-        currentFilter.end = null;
+        currentFilter.startDate = null;
+        currentFilter.endDate = null;
         filteredData = [...allData];
         currentPage = 1;
         loadTableData();

@@ -28,7 +28,17 @@ const SolarData = {
     generateHistoricalData(count = 100) {
         const data = [];
         const now = new Date();
-        
+        const pad = (n) => String(n).padStart(2, '0');
+        const fmt = (d) => {
+            const y = d.getFullYear();
+            const m = pad(d.getMonth() + 1);
+            const day = pad(d.getDate());
+            const hh = pad(d.getHours());
+            const mm = pad(d.getMinutes());
+            const ss = pad(d.getSeconds());
+            return `${y}-${m}-${day} ${hh}:${mm}:${ss}`;
+        };
+
         for (let i = 0; i < count; i++) {
             const date = new Date(now);
             date.setMinutes(date.getMinutes() - (count - i) * 5); // Data setiap 5 menit
@@ -38,15 +48,7 @@ const SolarData = {
             
             data.push({
                 id: i + 1,
-                waktu: date.toLocaleString('id-ID', { 
-                    year: 'numeric', 
-                    month: '2-digit', 
-                    day: '2-digit',
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false 
-                }).replace(/\//g, '-'),
+                waktu: fmt(date),
                 tegangan: soc >= 100 ? (14.2 + Math.random() * 0.8).toFixed(1) : (11 + Math.random() * 4).toFixed(1),
                 arus: soc >= 100 ? (0.1 + Math.random() * 0.2).toFixed(1) : (0.5 + Math.random() * 4).toFixed(1),
                 soc: soc,

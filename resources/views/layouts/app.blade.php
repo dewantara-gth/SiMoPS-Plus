@@ -1,11 +1,16 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solar Panel Monitoring - @yield('title')</title>
     
     <!-- Tailwind CSS -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Font Awesome -->
@@ -38,7 +43,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-950 text-slate-100">
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         @include('partials.sidebar')
@@ -49,7 +54,7 @@
             @include('partials.navbar')
             
             <!-- Page Content -->
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 lg:p-6">
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-950 p-4 lg:p-6">
                 @yield('content')
             </main>
         </div>
