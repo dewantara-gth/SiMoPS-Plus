@@ -84,34 +84,8 @@
                 @endif
             </a>
             
-            <!-- Settings -->
-            <a href="#" class="group flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors text-slate-200 hover:bg-slate-900 hover:text-white border border-transparent hover:border-slate-800">
-                <div class="w-10 h-10 rounded-xl bg-slate-800/60 border border-slate-800 group-hover:bg-blue-500/15 group-hover:border-blue-500/20 flex items-center justify-center transition-colors">
-                    <i class="fas fa-cog text-slate-300 group-hover:text-blue-300 text-lg"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <span class="font-medium">Settings</span>
-                    <p class="text-xs text-slate-400 mt-0.5 truncate">Pengaturan sistem</p>
-                </div>
-            </a>
-            
             <!-- Divider -->
             <div class="my-4 border-t border-slate-800"></div>
-            
-            <!-- Additional Menu (Optional) -->
-            <div class="px-4 py-2">
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Lainnya</p>
-            </div>
-            
-            <!-- Help -->
-            <a href="#" class="group flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors text-slate-200 hover:bg-slate-900 hover:text-white border border-transparent hover:border-slate-800">
-                <div class="w-10 h-10 rounded-xl bg-slate-800/60 border border-slate-800 group-hover:bg-blue-500/15 group-hover:border-blue-500/20 flex items-center justify-center transition-colors">
-                    <i class="fas fa-question-circle text-slate-300 group-hover:text-blue-300 text-lg"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="font-medium">Bantuan</span>
-                </div>
-            </a>
             
             <!-- Logout -->
             <a href="#" class="group flex items-center gap-3 px-4 py-3 text-red-300 rounded-2xl hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors">
