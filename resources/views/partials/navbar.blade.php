@@ -19,11 +19,12 @@
                 
                 <!-- User Menu -->
                 <div class="relative">
+                    @php($currentUser = auth()->user())
                     <button class="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
                         <div class="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-md">
                             <i class="fas fa-user text-sm"></i>
                         </div>
-                        <span class="text-sm font-medium hidden md:block">Admin</span>
+                        <span class="text-sm font-medium hidden md:block">{{ $currentUser?->name ?? 'User' }}</span>
                        
                     </button>
                 </div>

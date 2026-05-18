@@ -23,8 +23,15 @@
                 <h2 class="text-3xl font-bold text-gray-800">Solar Monitor</h2>
                 <p class="text-gray-600 mt-2">Solar Panel Monitoring System</p>
             </div>
+
+            @if ($errors->any())
+                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    {{ $errors->first() }}
+                </div>
+            @endif
             
-            <form>
+            <form method="POST" action="{{ route('register.store') }}">
+                @csrf
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Register Operator</h3>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
@@ -33,6 +40,8 @@
                     <input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" 
                            type="text" 
                            id="name" 
+                           name="name"
+                           value="{{ old('name') }}"
                            placeholder="Nama Operator">
                 </div>
                 
@@ -43,6 +52,8 @@
                     <input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" 
                            type="email" 
                            id="email" 
+                           name="email"
+                           value="{{ old('email') }}"
                            placeholder="operator@example.com">
                 </div>
                 
@@ -53,6 +64,8 @@
                     <input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" 
                            type="password" 
                            id="password" 
+                           name="password"
+                           autocomplete="new-password"
                            placeholder="••••••••">
                 </div>
                 
@@ -63,10 +76,12 @@
                     <input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" 
                            type="password" 
                            id="password_confirmation" 
+                           name="password_confirmation"
+                           autocomplete="new-password"
                            placeholder="••••••••">
                 </div>
                 
-                <button class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
                     Register
                 </button>
             </form>

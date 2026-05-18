@@ -26,8 +26,20 @@
                 <h2 class="text-3xl font-bold text-gray-800">Solar Monitor</h2>
                 <p class="text-gray-600 mt-2">Solar Panel Monitoring System</p>
             </div>
+
+            @if (session('status'))
+                <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                    {{ session('status') }}
+                </div>
+            @endif
+            @if ($errors->has('email') || $errors->has('password'))
+                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    {{ $errors->first('email') ?: $errors->first('password') }}
+                </div>
+            @endif
             
-            <form>
+            <form method="POST" action="{{ route('login.attempt') }}">
+                @csrf
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Login Operator</h3>
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
@@ -36,8 +48,9 @@
                     <input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" 
                            type="email" 
                            id="email" 
+                           name="email"
                            placeholder="admin@example.com"
-                           value="admin@example.com">
+                           value="{{ old('email') }}">
                 </div>
                 
                 <div class="mb-6">
@@ -47,11 +60,12 @@
                     <input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" 
                            type="password" 
                            id="password" 
+                           name="password"
                            placeholder="••••••••"
-                           value="password">
+                           autocomplete="current-password">
                 </div>
                 
-                <button class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
                     Login
                 </button>
             </form>
@@ -84,12 +98,21 @@
                     </button>
                 </div>
 
-                <form class="mt-6">
+                @if ($errors->has('fp_name') || $errors->has('fp_email') || $errors->has('fp_password'))
+                    <div class="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        {{ $errors->first('fp_name') ?: ($errors->first('fp_email') ?: $errors->first('fp_password')) }}
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('password.forgot') }}" class="mt-6">
+                    @csrf
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="forgot_name">Nama</label>
                         <input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                                type="text"
                                id="forgot_name"
+                               name="fp_name"
+                               value="{{ old('fp_name') }}"
                                placeholder="Nama Operator">
                     </div>
 
@@ -98,6 +121,8 @@
                         <input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                                type="email"
                                id="forgot_email"
+                               name="fp_email"
+                               value="{{ old('fp_email') }}"
                                placeholder="operator@example.com">
                     </div>
 
@@ -106,6 +131,8 @@
                         <input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                                type="password"
                                id="forgot_password"
+                               name="fp_password"
+                               autocomplete="new-password"
                                placeholder="••••••••">
                     </div>
 
@@ -114,10 +141,12 @@
                         <input class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                                type="password"
                                id="forgot_password_confirmation"
+                               name="fp_password_confirmation"
+                               autocomplete="new-password"
                                placeholder="••••••••">
                     </div>
 
-                    <button type="button" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
                         Ubah Password
                     </button>
                 </form>
@@ -153,6 +182,16 @@
                     closeModal();
                 }
             });
+            @php($shouldOpenForgotPasswordModal = $errors->has('fp_name')
+                || $errors->has('fp_email')
+                || $errors->has('fp_password')
+                || old('fp_email')
+                || old('fp_name'))
+            const shouldOpenForgotPasswordModal = @json($shouldOpenForgotPasswordModal);
+
+            if (shouldOpenForgotPasswordModal) {
+                openModal();
+            }
         });
     </script>
 </body>

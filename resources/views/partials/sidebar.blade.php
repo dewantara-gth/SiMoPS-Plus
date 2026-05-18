@@ -36,16 +36,18 @@
         </div>
         
         <div class="mx-4 mt-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
+            @php($currentUser = auth()->user())
+            @php($avatarName = urlencode($currentUser?->name ?? 'User'))
             <div class="flex items-center gap-3">
                 <div class="relative">
-                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=3B82F6&color=fff&bold=true&size=128"
+                    <img src="https://ui-avatars.com/api/?name={{ $avatarName }}&background=3B82F6&color=fff&bold=true&size=128"
                          alt="User"
                          class="w-12 h-12 rounded-xl border border-slate-700">
                     <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-slate-900 rounded-full"></div>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h3 class="font-semibold text-white truncate">Admin User</h3>
-                    <p class="text-xs text-slate-400 truncate">admin@example.com</p>
+                    <h3 class="font-semibold text-white truncate">{{ $currentUser?->name ?? 'User' }}</h3>
+                    <p class="text-xs text-slate-400 truncate">{{ $currentUser?->email ?? '' }}</p>
                     <div class="flex items-center gap-2 mt-2">
                         <span class="text-xs bg-green-500/10 text-green-300 px-2 py-0.5 rounded-full border border-green-500/20">Active</span>
                         <span class="text-xs bg-blue-500/10 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/20">Admin</span>
@@ -88,14 +90,17 @@
             <div class="my-4 border-t border-slate-800"></div>
             
             <!-- Logout -->
-            <a href="#" class="group flex items-center gap-3 px-4 py-3 text-red-300 rounded-2xl hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors">
-                <div class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center transition-colors">
-                    <i class="fas fa-sign-out-alt text-red-300 text-lg"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="font-medium">Logout</span>
-                </div>
-            </a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="w-full group flex items-center gap-3 px-4 py-3 text-red-300 rounded-2xl hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-colors">
+                    <div class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center transition-colors">
+                        <i class="fas fa-sign-out-alt text-red-300 text-lg"></i>
+                    </div>
+                    <div class="min-w-0 text-left">
+                        <span class="font-medium">Logout</span>
+                    </div>
+                </button>
+            </form>
         </nav>
         
         <!-- System Info Footer -->
