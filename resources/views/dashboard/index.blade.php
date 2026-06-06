@@ -11,7 +11,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600">Tegangan Baterai</p>
-                    <p class="text-2xl font-bold" id="tegangan">13.2 V</p>
+                    <p class="text-2xl font-bold" id="tegangan">-- V</p>
                 </div>
                 <div class="bg-blue-100 p-3 rounded-full">
                     <i class="fas fa-bolt text-blue-500 text-xl"></i>
@@ -27,7 +27,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600">Arus Charge</p>
-                    <p class="text-2xl font-bold" id="arus">2.5 A</p>
+                    <p class="text-2xl font-bold" id="arus">-- A</p>
                 </div>
                 <div class="bg-green-100 p-3 rounded-full">
                     <i class="fas fa-charging-station text-green-500 text-xl"></i>
@@ -43,7 +43,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-600">State of Charge</p>
-                    <p class="text-2xl font-bold" id="soc">78%</p>
+                    <p class="text-2xl font-bold" id="soc">--%</p>
                 </div>
                 <div class="bg-orange-100 p-3 rounded-full">
                     <i class="fas fa-battery-three-quarters text-orange-500 text-xl"></i>
@@ -155,13 +155,108 @@
     let relayState = 'ON';
     let currentMode = 'manual'; // 'manual' atau 'auto'
     let autoInterval = null;
+    let chartDataHistory = {
+        tegangan: [],
+        arus: [],
+        soc: [],
+        labels: []
+    };
+    
+    // CSRF Token untuk AJAX
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    function updateRelayDisplay(state) {
+        const relayStatus = document.querySelector('.badge-relay');
+        if (!relayStatus) return;
+        if (state === 'ON') {
+            relayStatus.className = 'badge-relay bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm';
+            relayStatus.textContent = 'ON';
+        } else {
+            relayStatus.className = 'badge-relay bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm';
+            relayStatus.textContent = 'OFF';
+        }
+    }
     
     document.addEventListener('DOMContentLoaded', function() {
         initCharts();
-        startRealtimeUpdates();
-        startAlertSimulation();
         setupRelayControl();
+        loadDashboardData();
+        startRealtimeUpdates();
+        setupChartRangeSelectors();
     });
+    
+    async function loadDashboardData() {
+        const data = await fetchLatestData();
+        if (data) {
+            updateSensorData(data);
+            checkAlerts(data);
+            resetTimeStamps();
+        }
+        await fetchInitialChartData();
+    }
+    
+    // ==================== FUNGSI API (REAL DATA) ====================
+    
+    async function fetchLatestData() {
+        try {
+            const response = await fetch('/api/latest');
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Gagal fetch data real:', error);
+            return null;
+        }
+    }
+    
+    async function fetchChartData(hours = 24) {
+        try {
+            const response = await fetch(`/api/history-chart?hours=${hours}`);
+            if (!response.ok) throw new Error('Network error');
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Gagal fetch chart data:', error);
+            return [];
+        }
+    }
+    
+    async function sendRelayCommand(status, mode = 'manual') {
+        try {
+            const response = await fetch('/api/control-relay', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ status: status, mode: mode })
+            });
+            const result = await response.json();
+            return result.success;
+        } catch (error) {
+            console.error('Gagal kirim perintah relay:', error);
+            return false;
+        }
+    }
+    
+    async function fetchDeviceStatus() {
+        try {
+            const data = await fetchLatestData();
+            if (data && data.timestamp) {
+                const lastSeen = new Date(data.timestamp);
+                const now = new Date();
+                const diffSeconds = (now - lastSeen) / 1000;
+                const isOnline = diffSeconds < 30;
+                updateDeviceStatus(isOnline);
+            } else {
+                updateDeviceStatus(false);
+            }
+        } catch (error) {
+            updateDeviceStatus(false);
+        }
+    }
+    
+    // ==================== INISIALISASI CHART ====================
     
     function initCharts() {
         const ctxTegangan = document.getElementById('chartTegangan').getContext('2d');
@@ -170,204 +265,130 @@
         const chartTextColor = '#cbd5e1';
         const chartGridColor = 'rgba(148, 163, 184, 0.2)';
         
-        // Chart Tegangan
         chartTegangan = new Chart(ctxTegangan, {
             type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Tegangan (V)',
-                    data: [],
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: chartTextColor
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            color: chartTextColor
-                        },
-                        grid: {
-                            color: chartGridColor
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        max: 20,
-                        ticks: {
-                            color: chartTextColor
-                        },
-                        grid: {
-                            color: chartGridColor
-                        },
-                        title: {
-                            display: true,
-                            text: 'Tegangan (V)',
-                            color: chartTextColor
-                        }
-                    }
-                }
-            }
+            data: { labels: [], datasets: [{ label: 'Tegangan (V)', data: [], borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.4, fill: true }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartTextColor } } }, scales: { x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, y: { beginAtZero: true, max: 20, ticks: { color: chartTextColor }, grid: { color: chartGridColor }, title: { display: true, text: 'Tegangan (V)', color: chartTextColor } } } }
         });
         
-        // Chart Arus
         chartArus = new Chart(ctxArus, {
             type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Arus (A)',
-                    data: [],
-                    borderColor: 'rgb(34, 197, 94)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: chartTextColor
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            color: chartTextColor
-                        },
-                        grid: {
-                            color: chartGridColor
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        max: 5,
-                        ticks: {
-                            color: chartTextColor
-                        },
-                        grid: {
-                            color: chartGridColor
-                        },
-                        title: {
-                            display: true,
-                            text: 'Arus (A)',
-                            color: chartTextColor
-                        }
-                    }
-                }
-            }
+            data: { labels: [], datasets: [{ label: 'Arus (A)', data: [], borderColor: 'rgb(34, 197, 94)', backgroundColor: 'rgba(34, 197, 94, 0.1)', tension: 0.4, fill: true }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartTextColor } } }, scales: { x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, y: { beginAtZero: true, max: 5, ticks: { color: chartTextColor }, grid: { color: chartGridColor }, title: { display: true, text: 'Arus (A)', color: chartTextColor } } } }
         });
         
-        // Chart SOC
         chartSOC = new Chart(ctxSOC, {
             type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'SOC (%)',
-                    data: [],
-                    borderColor: 'rgb(249, 115, 22)',
-                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: chartTextColor
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            color: chartTextColor
-                        },
-                        grid: {
-                            color: chartGridColor
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            color: chartTextColor
-                        },
-                        grid: {
-                            color: chartGridColor
-                        },
-                        title: {
-                            display: true,
-                            text: 'SOC (%)',
-                            color: chartTextColor
-                        }
-                    }
-                }
-            }
+            data: { labels: [], datasets: [{ label: 'SOC (%)', data: [], borderColor: 'rgb(249, 115, 22)', backgroundColor: 'rgba(249, 115, 22, 0.1)', tension: 0.4, fill: true }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartTextColor } } }, scales: { x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, y: { beginAtZero: true, max: 100, ticks: { color: chartTextColor }, grid: { color: chartGridColor }, title: { display: true, text: 'SOC (%)', color: chartTextColor } } } }
         });
     }
     
+    function applyChartData(data) {
+        if (!data.length) return;
+        
+        chartTegangan.data.labels = data.map(item => item.waktu);
+        chartTegangan.data.datasets[0].data = data.map(item => item.tegangan);
+        chartTegangan.update();
+        
+        chartArus.data.labels = data.map(item => item.waktu);
+        chartArus.data.datasets[0].data = data.map(item => item.arus);
+        chartArus.update();
+        
+        chartSOC.data.labels = data.map(item => item.waktu);
+        chartSOC.data.datasets[0].data = data.map(item => item.soc);
+        chartSOC.update();
+        
+        chartDataHistory = {
+            labels: data.map(item => item.waktu),
+            tegangan: data.map(item => item.tegangan),
+            arus: data.map(item => item.arus),
+            soc: data.map(item => item.soc)
+        };
+    }
+    
+    async function fetchInitialChartData() {
+        const hours = parseInt(document.getElementById('range-tegangan').value) || 24;
+        const data = await fetchChartData(hours);
+        applyChartData(data);
+    }
+    
+    function setupChartRangeSelectors() {
+        const selectors = [
+            { id: 'range-tegangan', chart: () => chartTegangan, field: 'tegangan' },
+            { id: 'range-arus', chart: () => chartArus, field: 'arus' },
+            { id: 'range-soc', chart: () => chartSOC, field: 'soc' },
+        ];
+        
+        selectors.forEach(({ id, chart, field }) => {
+            document.getElementById(id).addEventListener('change', async function() {
+                const hours = parseInt(this.value);
+                const data = await fetchChartData(hours);
+                if (!data.length) return;
+                
+                const targetChart = chart();
+                targetChart.data.labels = data.map(item => item.waktu);
+                targetChart.data.datasets[0].data = data.map(item => item[field]);
+                targetChart.update();
+            });
+        });
+    }
+    
+    // ==================== UPDATE REAL-TIME ====================
+    
     function startRealtimeUpdates() {
-        // Update sensor setiap 5 detik (relay tidak ikut update)
-        setInterval(() => {
-            const data = SolarData.getCurrentData();
-            updateSensorData(data);
-            updateCharts(data);
-            checkAlerts(data);
+        // Update sensor setiap 5 detik dari database
+        setInterval(async () => {
+            const data = await fetchLatestData();
+            if (data) {
+                updateSensorData(data);
+                updateChartsFromDatabase();
+                checkAlerts(data);
+                resetTimeStamps();
+            }
         }, 5000);
         
-        // Update waktu setiap detik
-        setInterval(() => {
-            updateTimeStamps();
-        }, 1000);
+        // Update timestamp setiap detik
+        setInterval(() => { updateTimeStamps(); }, 1000);
         
-        // Simulasi status device (toggle setiap 15 detik)
-        setInterval(() => {
-            const isOnline = Math.random() > 0.3; // 70% chance online
-            updateDeviceStatus(isOnline);
-        }, 15000);
+        // Update device status setiap 10 detik
+        setInterval(() => { fetchDeviceStatus(); }, 10000);
+        
+        // Panggil sekali di awal
+        fetchDeviceStatus();
     }
     
     function updateSensorData(data) {
-        document.getElementById('tegangan').textContent = data.tegangan + ' V';
-        document.getElementById('arus').textContent = data.arus + ' A';
-        document.getElementById('soc').textContent = data.soc + '%';
-        
-        // Relay TIDAK diupdate otomatis dari data dummy
-        // Relay hanya berubah melalui tombol manual atau mode auto
+        if (data.tegangan !== undefined && data.tegangan !== null) {
+            document.getElementById('tegangan').textContent = data.tegangan + ' V';
+        }
+        if (data.arus !== undefined && data.arus !== null) {
+            document.getElementById('arus').textContent = data.arus + ' A';
+        }
+        if (data.soc !== undefined && data.soc !== null) {
+            document.getElementById('soc').textContent = data.soc + '%';
+        }
+        if (data.relay_status) {
+            const newRelayState = data.relay_status;
+            relayState = newRelayState;
+            updateRelayDisplay(relayState);
+        }
+    }
+    
+    async function updateChartsFromDatabase() {
+        const hours = parseInt(document.getElementById('range-tegangan').value) || 24;
+        const data = await fetchChartData(hours);
+        applyChartData(data);
     }
     
     function updateTimeStamps() {
-        // Update timestamp untuk setiap card
         const times = ['tegangan-time', 'arus-time', 'soc-time', 'relay-time'];
         times.forEach(id => {
             const element = document.getElementById(id);
             if (element) {
                 const currentText = element.textContent;
                 const seconds = parseInt(currentText) || 0;
-                if (seconds < 60) {
-                    element.textContent = (seconds + 1) + 's';
-                }
+                if (seconds < 60) element.textContent = (seconds + 1) + 's';
             }
         });
     }
@@ -379,289 +400,160 @@
         document.getElementById('relay-time').textContent = '0s';
     }
     
-    function updateCharts(data) {
-        const time = new Date().toLocaleTimeString();
-        
-        // Update chart tegangan
-        if (chartTegangan.data.labels.length > 20) {
-            chartTegangan.data.labels.shift();
-            chartTegangan.data.datasets[0].data.shift();
-        }
-        chartTegangan.data.labels.push(time);
-        chartTegangan.data.datasets[0].data.push(parseFloat(data.tegangan));
-        chartTegangan.update();
-        
-        // Update chart arus
-        if (chartArus.data.labels.length > 20) {
-            chartArus.data.labels.shift();
-            chartArus.data.datasets[0].data.shift();
-        }
-        chartArus.data.labels.push(time);
-        chartArus.data.datasets[0].data.push(parseFloat(data.arus));
-        chartArus.update();
-        
-        // Update chart SOC
-        if (chartSOC.data.labels.length > 20) {
-            chartSOC.data.labels.shift();
-            chartSOC.data.datasets[0].data.shift();
-        }
-        chartSOC.data.labels.push(time);
-        chartSOC.data.datasets[0].data.push(parseFloat(data.soc));
-        chartSOC.update();
-    }
-    
     function updateDeviceStatus(isOnline) {
         const statusElement = document.getElementById('device-status');
+        if (!statusElement) return;
         if (isOnline) {
             statusElement.className = 'px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800';
             statusElement.innerHTML = '<i class="fas fa-circle text-xs mr-1"></i> Online';
         } else {
             statusElement.className = 'px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800';
             statusElement.innerHTML = '<i class="fas fa-circle text-xs mr-1"></i> Offline';
-            
-            // Tampilkan alert device offline
             showToast('Device Offline', 'Tidak ada data dari device dalam 30 detik terakhir', 'error');
         }
     }
     
+    // ==================== ALERT & NOTIFIKASI ====================
+    
     function checkAlerts(data) {
-    const tegangan = parseFloat(data.tegangan);
-    const soc = parseFloat(data.soc);
-    
-    // Cek kondisi overcharge (baterai penuh)
-    if (soc >= 100) {
-        const title = '⚠️ OVERCHARGE ALERT - BATERAI PENUH';
-        const message = `Baterai telah mencapai 100% (SOC: ${soc}%). Relay akan dimatikan untuk menghentikan pengisian.`;
-        showToast(title, message, 'warning');
+        const tegangan = parseFloat(data.tegangan);
+        const soc = parseFloat(data.soc);
         
-        // Tambah notifikasi ke history
-        addNotification(title, message, 'warning');
-        
-        // OTOMATIS MATIKAN RELAY jika dalam mode auto
-        if (currentMode === 'auto') {
-            relayState = 'OFF';
-            updateRelayDisplay(relayState);
-            document.getElementById('relay-time').textContent = '0s';
+        if (soc >= 100) {
+            const title = '⚠️ OVERCHARGE ALERT - BATERAI PENUH';
+            const message = `Baterai telah mencapai 100% (SOC: ${soc}%). Relay akan dimatikan untuk menghentikan pengisian.`;
+            showToast(title, message, 'warning');
+            addNotification(title, message, 'warning');
             
-            // Tampilkan notifikasi tambahan
-            showToast('Relay Otomatis', 'Relay dimatikan untuk mencegah overcharge', 'info');
-        } else {
-            // Jika mode manual, tetap kasih peringatan
-            showToast('Peringatan', 'Baterai penuh! Segera matikan relay manual', 'warning');
-        }
-    }
-    // Cek kondisi low battery
-    else if (tegangan < 11.5) {
-        const title = '⚠️ LOW BATTERY ALERT';
-        const message = `Tegangan rendah: ${tegangan}V. Segera lakukan pengisian.`;
-        showToast(title, message, 'error');
-        addNotification(title, message, 'error');
-    }
-}
-
-function setupRelayControl() {
-    const toggleBtn = document.getElementById('toggle-relay');
-    const modeManual = document.getElementById('mode-manual');
-    const modeAuto = document.getElementById('mode-auto');
-    const relayStatus = document.querySelector('.badge-relay');
-    const relayMode = document.getElementById('relay-mode');
-    const manualControls = document.getElementById('manual-controls');
-    
-    // Update tampilan awal
-    updateRelayDisplay(relayState);
-    updateModeUI();
-    
-    // Event listener untuk tombol mode
-    modeManual.addEventListener('click', function() {
-        currentMode = 'manual';
-        updateModeUI();
-        
-        // Hentikan interval auto jika ada
-        if (autoInterval) {
-            clearInterval(autoInterval);
-            autoInterval = null;
-        }
-        
-        showToast('Mode Manual', 'Relay dapat dikontrol manual', 'info');
-    });
-    
-    modeAuto.addEventListener('click', function() {
-        currentMode = 'auto';
-        updateModeUI();
-        
-        // Mulai mode auto
-        startAutoMode();
-        
-        showToast('Mode Auto', 'Relay akan otomatis berdasarkan kondisi baterai', 'info');
-    });
-    
-    // Event listener untuk tombol toggle (hanya aktif di mode manual)
-    toggleBtn.addEventListener('click', function() {
-        if (currentMode === 'manual') {
-            // Toggle state relay
-            relayState = relayState === 'ON' ? 'OFF' : 'ON';
-            updateRelayDisplay(relayState);
-            
-            // Reset timestamp relay
-            document.getElementById('relay-time').textContent = '0s';
-            
-            showToast('Relay Manual', `Relay diubah ke mode ${relayState}`, 'success');
-            
-            // Log ke console (untuk debugging)
-            console.log(`Relay diubah manual ke: ${relayState} pada ${new Date().toLocaleString()}`);
-        } else {
-            showToast('Mode Auto', 'Ganti ke mode manual untuk mengontrol relay', 'warning');
-        }
-    });
-    
-    function updateModeUI() {
-        if (currentMode === 'manual') {
-            modeManual.className = 'px-3 py-1 text-xs rounded-l-lg bg-blue-600 text-white font-medium';
-            modeAuto.className = 'px-3 py-1 text-xs rounded-r-lg bg-gray-200 text-gray-700 font-medium';
-            manualControls.style.display = 'block';
-            relayMode.textContent = 'Manual';
-            relayMode.className = 'font-semibold text-blue-600';
-        } else {
-            modeManual.className = 'px-3 py-1 text-xs rounded-l-lg bg-gray-200 text-gray-700 font-medium';
-            modeAuto.className = 'px-3 py-1 text-xs rounded-r-lg bg-blue-600 text-white font-medium';
-            manualControls.style.display = 'none';
-            relayMode.textContent = 'Auto';
-            relayMode.className = 'font-semibold text-green-600';
-        }
-    }
-    
-    function updateRelayDisplay(state) {
-        if (state === 'ON') {
-            relayStatus.className = 'badge-relay bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm';
-            relayStatus.textContent = 'ON';
-        } else {
-            relayStatus.className = 'badge-relay bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm';
-            relayStatus.textContent = 'OFF';
-        }
-    }
-    
-    function startAutoMode() {
-        // Hentikan interval sebelumnya jika ada
-        if (autoInterval) {
-            clearInterval(autoInterval);
-        }
-        
-        // Interval untuk mode auto (cek setiap 5 detik)
-        autoInterval = setInterval(() => {
             if (currentMode === 'auto') {
-                // Ambil data sensor terbaru dari DOM
-                const teganganText = document.getElementById('tegangan').textContent;
-                const socText = document.getElementById('soc').textContent;
-                
-                const tegangan = parseFloat(teganganText);
-                const soc = parseFloat(socText);
-                
-                // LOGIKA AUTO RELAY YANG BARU:
-                // 1. Jika SOC >= 100% (baterai penuh) -> RELAY OFF (berhenti charge)
-                // 2. Jika tegangan < 11.5V (low battery) -> RELAY ON (mulai charge)
-                // 3. Jika SOC antara 50-99% dan tegangan normal -> RELAY ON
-                // 4. Kondisi lainnya -> RELAY OFF
-                
-                let newState;
-                
-                if (soc >= 100) {
-                    // Baterai penuh, harus OFF
-                    newState = 'OFF';
-                    if (relayState !== 'OFF') {
-                        showToast('Auto Cut-Off', 'Baterai penuh, relay dimatikan otomatis', 'warning');
-                    }
-                }
-                else if (tegangan < 11.5) {
-                    // Low battery, harus ON (charge)
-                    newState = 'ON';
-                    if (relayState !== 'ON') {
-                        showToast('Auto Charge', 'Tegangan rendah, relay dinyalakan otomatis', 'info');
-                    }
-                }
-                else if (soc >= 50 && tegangan > 12) {
-                    // Kondisi normal, bisa charge
-                    newState = 'ON';
-                }
-                else {
-                    // Kondisi lainnya
-                    newState = 'OFF';
-                }
-                
-                // Jika state berubah, update relay
-                if (newState !== relayState) {
+                relayState = 'OFF';
+                updateRelayDisplay(relayState);
+                document.getElementById('relay-time').textContent = '0s';
+                sendRelayCommand('OFF', 'auto');
+                showToast('Relay Otomatis', 'Relay dimatikan untuk mencegah overcharge', 'info');
+            } else {
+                showToast('Peringatan', 'Baterai penuh! Segera matikan relay manual', 'warning');
+            }
+        } else if (tegangan < 11.5) {
+            const title = '⚠️ LOW BATTERY ALERT';
+            const message = `Tegangan rendah: ${tegangan}V. Segera lakukan pengisian.`;
+            showToast(title, message, 'error');
+            addNotification(title, message, 'error');
+        }
+    }
+    
+    function addNotification(title, message, type) {
+        let notifications = JSON.parse(localStorage.getItem('solar_notifications') || '[]');
+        notifications.unshift({ title, message, type, time: new Date().toISOString() });
+        notifications = notifications.slice(0, 50);
+        localStorage.setItem('solar_notifications', JSON.stringify(notifications));
+    }
+    
+    // ==================== KONTROL RELAY ====================
+    
+    function setupRelayControl() {
+        const toggleBtn = document.getElementById('toggle-relay');
+        const modeManual = document.getElementById('mode-manual');
+        const modeAuto = document.getElementById('mode-auto');
+        const relayMode = document.getElementById('relay-mode');
+        const manualControls = document.getElementById('manual-controls');
+        
+        function updateModeUI() {
+            if (currentMode === 'manual') {
+                modeManual.className = 'px-3 py-1 text-xs rounded-l-lg bg-blue-600 text-white font-medium';
+                modeAuto.className = 'px-3 py-1 text-xs rounded-r-lg bg-gray-200 text-gray-700 font-medium';
+                manualControls.style.display = 'block';
+                relayMode.textContent = 'Manual';
+                relayMode.className = 'font-semibold text-blue-600';
+            } else {
+                modeManual.className = 'px-3 py-1 text-xs rounded-l-lg bg-gray-200 text-gray-700 font-medium';
+                modeAuto.className = 'px-3 py-1 text-xs rounded-r-lg bg-blue-600 text-white font-medium';
+                manualControls.style.display = 'none';
+                relayMode.textContent = 'Auto';
+                relayMode.className = 'font-semibold text-green-600';
+            }
+        }
+        
+        updateRelayDisplay(relayState);
+        updateModeUI();
+        
+        modeManual.addEventListener('click', function() {
+            currentMode = 'manual';
+            updateModeUI();
+            if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+            sendRelayCommand(relayState, 'manual');
+            showToast('Mode Manual', 'Relay dapat dikontrol manual', 'info');
+        });
+        
+        modeAuto.addEventListener('click', function() {
+            currentMode = 'auto';
+            updateModeUI();
+            startAutoMode();
+            showToast('Mode Auto', 'Relay akan otomatis berdasarkan kondisi baterai', 'info');
+        });
+        
+        toggleBtn.addEventListener('click', async function() {
+            if (currentMode === 'manual') {
+                const newState = relayState === 'ON' ? 'OFF' : 'ON';
+                const success = await sendRelayCommand(newState, 'manual');
+                if (success) {
                     relayState = newState;
                     updateRelayDisplay(relayState);
-                    
-                    // Reset timestamp relay
                     document.getElementById('relay-time').textContent = '0s';
-                    
-                    console.log(`Relay auto berubah ke: ${relayState} pada ${new Date().toLocaleString()}`);
+                    showToast('Relay Manual', `Relay diubah ke mode ${relayState}`, 'success');
+                } else {
+                    showToast('Gagal', 'Gagal mengirim perintah ke relay', 'error');
                 }
+            } else {
+                showToast('Mode Auto', 'Ganti ke mode manual untuk mengontrol relay', 'warning');
             }
-        }, 5000); // Cek setiap 5 detik
+        });
+        
+        function startAutoMode() {
+            if (autoInterval) clearInterval(autoInterval);
+            autoInterval = setInterval(async () => {
+                if (currentMode === 'auto') {
+                    const data = await fetchLatestData();
+                    if (data) {
+                        const tegangan = parseFloat(data.tegangan);
+                        const soc = parseFloat(data.soc);
+                        let newState = relayState;
+                        
+                        if (soc >= 100) newState = 'OFF';
+                        else if (tegangan < 11.5) newState = 'ON';
+                        else if (soc >= 50 && tegangan > 12) newState = 'ON';
+                        else newState = 'OFF';
+                        
+                        if (newState !== relayState) {
+                            const success = await sendRelayCommand(newState, 'auto');
+                            if (success) {
+                                relayState = newState;
+                                updateRelayDisplay(relayState);
+                                document.getElementById('relay-time').textContent = '0s';
+                                console.log(`Relay auto berubah ke: ${relayState}`);
+                            }
+                        }
+                    }
+                }
+            }, 5000);
+        }
     }
-}
     
+    // ==================== TOAST NOTIFICATION ====================
     
     function showToast(title, message, type = 'info') {
         const container = document.getElementById('toast-container');
+        if (!container) return;
         const toast = document.createElement('div');
-        
-        const bgColor = type === 'success' ? 'bg-green-50 border-green-400' : 
-                       type === 'warning' ? 'bg-yellow-50 border-yellow-400' : 
-                       type === 'error' ? 'bg-red-50 border-red-400' : 
-                       'bg-blue-50 border-blue-400';
-        
-        const iconColor = type === 'success' ? 'text-green-400' :
-                         type === 'warning' ? 'text-yellow-400' :
-                         type === 'error' ? 'text-red-400' :
-                         'text-blue-400';
-        
-        const icon = type === 'success' ? 'fa-check-circle' :
-                    type === 'warning' ? 'fa-exclamation-triangle' :
-                    type === 'error' ? 'fa-times-circle' :
-                    'fa-info-circle';
-        
+        const bgColor = type === 'success' ? 'bg-green-50 border-green-400' : type === 'warning' ? 'bg-yellow-50 border-yellow-400' : type === 'error' ? 'bg-red-50 border-red-400' : 'bg-blue-50 border-blue-400';
+        const iconColor = type === 'success' ? 'text-green-400' : type === 'warning' ? 'text-yellow-400' : type === 'error' ? 'text-red-400' : 'text-blue-400';
+        const icon = type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : type === 'error' ? 'fa-times-circle' : 'fa-info-circle';
         toast.className = `max-w-sm w-full ${bgColor} border-l-4 p-4 mb-2 rounded shadow-lg flex justify-between items-start animate-slideIn`;
-        toast.innerHTML = `
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <i class="fas ${icon} ${iconColor} text-lg"></i>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-gray-900">${title}</p>
-                    <p class="text-sm text-gray-700">${message}</p>
-                </div>
-            </div>
-            <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        
+        toast.innerHTML = `<div class="flex"><div class="flex-shrink-0"><i class="fas ${icon} ${iconColor} text-lg"></i></div><div class="ml-3"><p class="text-sm font-medium text-gray-900">${title}</p><p class="text-sm text-gray-700">${message}</p></div></div><button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>`;
         container.appendChild(toast);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (toast.parentElement) {
-                toast.remove();
-            }
-        }, 5000);
+        setTimeout(() => { if (toast.parentElement) toast.remove(); }, 5000);
     }
     
-    function startAlertSimulation() {
-        setInterval(() => {
-            if (Math.random() > 0.7) { // 30% chance muncul alert
-                const alertTypes = [
-                    { title: 'Overcharge Alert', message: 'Tegangan melebihi 14.4V', type: 'warning' },
-                    { title: 'Low Battery Alert', message: 'Tegangan dibawah 11.5V', type: 'error' },
-                    { title: 'Device Offline', message: 'Koneksi device terputus', type: 'error' }
-                ];
-                const randomAlert = alertTypes[Math.floor(Math.random() * alertTypes.length)];
-                showToast(randomAlert.title, randomAlert.message, randomAlert.type);
-            }
-        }, 30000);
-    }
-
-    
+    window.sendRelayCommand = sendRelayCommand;
 </script>
 @endpush

@@ -116,16 +116,13 @@
 <script>
     let currentPage = 1;
     let itemsPerPage = 10;
-    let filteredData = [];
-    let allData = [];
+    let totalData = 0;
     let currentFilter = { startDate: null, endDate: null };
     
+    // CSRF Token untuk AJAX
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
     document.addEventListener('DOMContentLoaded', function() {
-        // Generate dummy data dan urutkan dari terbaru ke terlama
-        allData = SolarData.generateHistoricalData(150);
-        sortDataByDate('desc'); // Urutkan descending (terbaru dulu)
-        filteredData = [...allData];
-        
         // Inisialisasi date range picker
         $('#date-range').daterangepicker({
             autoUpdateInput: false,
@@ -137,8 +134,8 @@
         
         $('#date-range').on('apply.daterangepicker', function(ev, picker) {
             $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
-            currentFilter.startDate = picker.startDate;
-            currentFilter.endDate = picker.endDate;
+            currentFilter.startDate = picker.startDate.format('YYYY-MM-DD');
+            currentFilter.endDate = picker.endDate.format('YYYY-MM-DD');
         });
         
         $('#date-range').on('cancel.daterangepicker', function(ev, picker) {
@@ -162,131 +159,117 @@
         loadTableData();
     });
     
-    // Fungsi untuk mengurutkan data berdasarkan waktu
-    function sortDataByDate(order = 'desc') {
-        allData.sort((a, b) => {
-            const dateA = moment(a.waktu, 'YYYY-MM-DD HH:mm:ss').toDate();
-            const dateB = moment(b.waktu, 'YYYY-MM-DD HH:mm:ss').toDate();
-            return order === 'desc' ? dateB - dateA : dateA - dateB;
-        });
-    }
+    // ==================== API FUNCTIONS (REAL DATA) ====================
     
-    function applyFilter() {
-        if (currentFilter.startDate && currentFilter.endDate) {
-            const start = moment(currentFilter.startDate).startOf('day');
-            const end = moment(currentFilter.endDate).endOf('day');
-
-            filteredData = allData.filter(item => {
-                const itemDate = moment(item.waktu, 'YYYY-MM-DD HH:mm:ss');
-                return itemDate.isBetween(start, end, 'second', '[]');
-            });
-        } else {
-            filteredData = [...allData];
+    async function loadTableData() {
+        try {
+            let url = `/api/history-table?page=${currentPage}&per_page=${itemsPerPage}`;
+            
+            if (currentFilter.startDate && currentFilter.endDate) {
+                url += `&start_date=${currentFilter.startDate}&end_date=${currentFilter.endDate}`;
+            }
+            
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network error');
+            
+            const result = await response.json();
+            totalData = result.total;
+            const pageData = result.data;
+            
+            // Update table
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '';
+            
+            if (pageData.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="7" class="px-6 py-10 text-center text-gray-500">
+                        <i class="fas fa-database text-4xl mb-3 text-gray-300"></i>
+                        <p>Tidak ada data historis</p>
+                    </td>
+                `;
+                tbody.appendChild(emptyRow);
+            } else {
+                const start = (currentPage - 1) * itemsPerPage;
+                pageData.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors';
+                    const relayClass = item.relay === 'ON' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                    const no = start + index + 1;
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${no}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.waktu}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.tegangan}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.arus}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.soc}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.suhu || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${relayClass}">${item.relay}</span>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            
+            // Update pagination
+            updatePagination();
+        } catch (error) {
+            console.error('Gagal load data:', error);
+            showToast('Error', 'Gagal memuat data historis', 'error');
         }
-        currentPage = 1;
-        loadTableData();
     }
     
-    function resetFilter() {
+    async function applyFilter() {
+        currentPage = 1;
+        await loadTableData();
+    }
+    
+    async function resetFilter() {
         $('#date-range').val('');
         currentFilter.startDate = null;
         currentFilter.endDate = null;
-        filteredData = [...allData];
         currentPage = 1;
-        loadTableData();
+        await loadTableData();
+        showToast('Filter Direset', 'Menampilkan semua data', 'info');
     }
     
-    function loadTableData() {
-        const start = (currentPage - 1) * itemsPerPage;
-        const end = start + itemsPerPage;
-        const pageData = filteredData.slice(start, end);
-        
-        // Update table
-        const tbody = document.getElementById('history-table-body');
-        tbody.innerHTML = '';
-        
-        if (pageData.length === 0) {
-            // Tampilkan pesan jika tidak ada data
-            const emptyRow = document.createElement('tr');
-            emptyRow.innerHTML = `
-                <td colspan="7" class="px-6 py-10 text-center text-gray-500">
-                    <i class="fas fa-database text-4xl mb-3 text-gray-300"></i>
-                    <p>Tidak ada data historis</p>
-                </td>
-            `;
-            tbody.appendChild(emptyRow);
-        } else {
-            pageData.forEach((item, index) => {
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-gray-50 transition-colors';
-                const relayClass = item.relay === 'ON' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-                const no = start + index + 1;
-                
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${no}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.waktu}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.tegangan}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.arus}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.soc}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.suhu}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${relayClass}">${item.relay}</span>
-                    </td>
-                `;
-                tbody.appendChild(row);
+    async function confirmDeleteAll() {
+        try {
+            const response = await fetch('/api/history-delete-all', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
             });
+            
+            if (!response.ok) throw new Error('Delete failed');
+            
+            const result = await response.json();
+            if (result.success) {
+                hideDeleteModal();
+                await loadTableData();
+                showToast('Sukses', 'Semua data historis berhasil dihapus', 'success');
+            } else {
+                showToast('Gagal', result.message || 'Gagal menghapus data', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting data:', error);
+            showToast('Error', 'Terjadi kesalahan saat menghapus data', 'error');
         }
-        
-        // Update pagination
-        updatePagination();
     }
     
-    function showDeleteModal() {
-        const totalData = filteredData.length;
-        
-        if (totalData === 0) {
-            showToast('Informasi', 'Tidak ada data untuk dihapus', 'info');
-            return;
-        }
-        
-        document.getElementById('total-data-to-delete').textContent = totalData;
-        document.getElementById('delete-modal').classList.remove('hidden');
-    }
-    
-    function hideDeleteModal() {
-        document.getElementById('delete-modal').classList.add('hidden');
-    }
-    
-    function confirmDeleteAll() {
-        // Hapus semua data
-        allData = [];
-        filteredData = [];
-        
-        // Reset ke halaman pertama
-        currentPage = 1;
-        
-        // Reload table
-        loadTableData();
-        
-        // Sembunyikan modal
-        hideDeleteModal();
-        
-        // Tampilkan notifikasi
-        showToast('Sukses', 'Semua data historis berhasil dihapus', 'success');
-        
-        // Optional: Simpan ke localStorage jika ingin persistent
-        // localStorage.removeItem('solar_historical_data');
-    }
+    // ==================== PAGINATION ====================
     
     function updatePagination() {
-        const totalItems = filteredData.length;
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        const totalPages = Math.ceil(totalData / itemsPerPage);
         const start = (currentPage - 1) * itemsPerPage + 1;
-        const end = Math.min(currentPage * itemsPerPage, totalItems);
+        const end = Math.min(currentPage * itemsPerPage, totalData);
         
-        document.getElementById('page-start').textContent = totalItems ? start : 0;
-        document.getElementById('page-end').textContent = totalItems ? end : 0;
-        document.getElementById('total-items').textContent = totalItems;
+        document.getElementById('page-start').textContent = totalData ? start : 0;
+        document.getElementById('page-end').textContent = totalData ? end : 0;
+        document.getElementById('total-items').textContent = totalData;
         
         // Generate pagination links
         let paginationHtml = '';
@@ -329,81 +312,144 @@
         document.getElementById('pagination-links').innerHTML = paginationHtml;
         
         // Mobile buttons
-        document.getElementById('prev-mobile').disabled = currentPage === 1 || totalPages === 0;
-        document.getElementById('next-mobile').disabled = currentPage === totalPages || totalPages === 0;
+        const prevMobile = document.getElementById('prev-mobile');
+        const nextMobile = document.getElementById('next-mobile');
+        if (prevMobile) prevMobile.disabled = currentPage === 1 || totalPages === 0;
+        if (nextMobile) nextMobile.disabled = currentPage === totalPages || totalPages === 0;
         
-        // Mobile buttons events
-        document.getElementById('prev-mobile').onclick = () => goToPage(currentPage - 1);
-        document.getElementById('next-mobile').onclick = () => goToPage(currentPage + 1);
+        if (prevMobile) prevMobile.onclick = () => goToPage(currentPage - 1);
+        if (nextMobile) nextMobile.onclick = () => goToPage(currentPage + 1);
     }
     
     function goToPage(page) {
-        if (page < 1 || page > Math.ceil(filteredData.length / itemsPerPage)) return;
+        const totalPages = Math.ceil(totalData / itemsPerPage);
+        if (page < 1 || page > totalPages) return;
         currentPage = page;
         loadTableData();
     }
     
-    function exportToExcel() {
-        if (filteredData.length === 0) {
-            showToast('Peringatan', 'Tidak ada data untuk diekspor', 'warning');
-            return;
-        }
-        
-        const dataToExport = filteredData.map((item, index) => ({
-            No: index + 1,
-            Waktu: item.waktu,
-            Tegangan: item.tegangan + ' V',
-            Arus: item.arus + ' A',
-            SOC: item.soc + '%',
-            Suhu: item.suhu + '°C',
-            'Status Relay': item.relay
+    // ==================== EXPORT FUNCTIONS ====================
+    
+    function buildExportRows(data) {
+        return data.map((item, index) => ({
+            no: index + 1,
+            waktu: item.waktu ?? '-',
+            tegangan: item.voltage_v ?? '-',
+            arus: item.current_a ?? '-',
+            soc: item.soc_percent ?? '-',
+            suhu: item.temperature_c ?? '-',
+            relay: item.relay_status ?? '-'
         }));
-        
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(dataToExport);
-        XLSX.utils.book_append_sheet(wb, ws, 'Data Historis');
-        XLSX.writeFile(wb, `data_historis_${new Date().toISOString().split('T')[0]}.xlsx`);
-        
-        showToast('Export Berhasil', 'File Excel berhasil didownload', 'success');
     }
     
-    function exportToPDF() {
-        if (filteredData.length === 0) {
-            showToast('Peringatan', 'Tidak ada data untuk diekspor', 'warning');
+    async function fetchExportData() {
+        let url = '/api/export-excel?';
+        if (currentFilter.startDate && currentFilter.endDate) {
+            url += `start_date=${currentFilter.startDate}&end_date=${currentFilter.endDate}`;
+        }
+        
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Export failed');
+        
+        const result = await response.json();
+        return result.data || [];
+    }
+    
+    async function exportToExcel() {
+        try {
+            showToast('Memproses', 'Sedang menyiapkan file Excel...', 'info');
+            
+            const data = await fetchExportData();
+            if (!data.length) {
+                showToast('Informasi', 'Tidak ada data untuk diekspor', 'warning');
+                return;
+            }
+            
+            const rows = buildExportRows(data).map(row => ({
+                'No': row.no,
+                'Waktu': row.waktu,
+                'Tegangan (V)': row.tegangan,
+                'Arus (A)': row.arus,
+                'SOC (%)': row.soc,
+                'Suhu (°C)': row.suhu,
+                'Status Relay': row.relay
+            }));
+            
+            const worksheet = XLSX.utils.json_to_sheet(rows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Data Historis');
+            
+            const filename = `data_historis_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(workbook, filename);
+            
+            showToast('Export Berhasil', `File Excel berhasil didownload (${data.length} data)`, 'success');
+        } catch (error) {
+            console.error('Export error:', error);
+            showToast('Gagal', 'Gagal mengekspor data ke Excel', 'error');
+        }
+    }
+    
+    async function exportToPDF() {
+        try {
+            showToast('Memproses', 'Sedang menyiapkan file PDF...', 'info');
+            
+            const data = await fetchExportData();
+            if (!data.length) {
+                showToast('Informasi', 'Tidak ada data untuk diekspor', 'warning');
+                return;
+            }
+            
+            const rows = buildExportRows(data);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            
+            doc.setFontSize(14);
+            doc.text('Data Historis Solar Panel Monitoring', 14, 15);
+            doc.setFontSize(10);
+            doc.text(`Diekspor: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`, 14, 22);
+            doc.text(`Total data: ${rows.length}`, 14, 28);
+            
+            doc.autoTable({
+                startY: 34,
+                head: [['No', 'Waktu', 'Tegangan (V)', 'Arus (A)', 'SOC (%)', 'Suhu (°C)', 'Relay']],
+                body: rows.map(row => [
+                    row.no,
+                    row.waktu,
+                    row.tegangan,
+                    row.arus,
+                    row.soc,
+                    row.suhu,
+                    row.relay
+                ]),
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [37, 99, 235] },
+                alternateRowStyles: { fillColor: [245, 247, 250] }
+            });
+            
+            const filename = `data_historis_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+            
+            showToast('Export Berhasil', `File PDF berhasil didownload (${data.length} data)`, 'success');
+        } catch (error) {
+            console.error('Export error:', error);
+            showToast('Gagal', 'Gagal mengekspor data ke PDF', 'error');
+        }
+    }
+    
+    // ==================== MODAL & TOAST ====================
+    
+    function showDeleteModal() {
+        if (totalData === 0) {
+            showToast('Informasi', 'Tidak ada data untuk dihapus', 'info');
             return;
         }
         
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        doc.setFontSize(16);
-        doc.text('Data Historis Panel Surya', 14, 15);
-        doc.setFontSize(10);
-        doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`, 14, 22);
-        doc.text(`Total Data: ${filteredData.length}`, 14, 28);
-        
-        const tableData = filteredData.map((item, index) => [
-            index + 1,
-            item.waktu,
-            item.tegangan + ' V',
-            item.arus + ' A',
-            item.soc + '%',
-            item.suhu + '°C',
-            item.relay
-        ]);
-        
-        doc.autoTable({
-            head: [['No', 'Waktu', 'Tegangan', 'Arus', 'SOC', 'Suhu', 'Relay']],
-            body: tableData,
-            startY: 35,
-            styles: { fontSize: 8 },
-            headStyles: { fillColor: [41, 128, 185] },
-            alternateRowStyles: { fillColor: [245, 245, 245] }
-        });
-        
-        doc.save(`data_historis_${new Date().toISOString().split('T')[0]}.pdf`);
-        
-        showToast('Export Berhasil', 'File PDF berhasil didownload', 'success');
+        document.getElementById('total-data-to-delete').textContent = totalData;
+        document.getElementById('delete-modal').classList.remove('hidden');
+    }
+    
+    function hideDeleteModal() {
+        document.getElementById('delete-modal').classList.add('hidden');
     }
     
     function showToast(title, message, type = 'info') {
@@ -411,17 +457,14 @@
         if (!container) return;
         
         const toast = document.createElement('div');
-        
         const bgColor = type === 'success' ? 'bg-green-50 border-green-400' : 
                        type === 'warning' ? 'bg-yellow-50 border-yellow-400' : 
                        type === 'error' ? 'bg-red-50 border-red-400' : 
                        'bg-blue-50 border-blue-400';
-        
         const iconColor = type === 'success' ? 'text-green-400' :
                          type === 'warning' ? 'text-yellow-400' :
                          type === 'error' ? 'text-red-400' :
                          'text-blue-400';
-        
         const icon = type === 'success' ? 'fa-check-circle' :
                     type === 'warning' ? 'fa-exclamation-triangle' :
                     type === 'error' ? 'fa-times-circle' :
@@ -444,12 +487,7 @@
         `;
         
         container.appendChild(toast);
-        
-        setTimeout(() => {
-            if (toast.parentElement) {
-                toast.remove();
-            }
-        }, 3000);
+        setTimeout(() => { if (toast.parentElement) toast.remove(); }, 3000);
     }
 </script>
 @endpush

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">  <!-- ⚠️ TAMBAHKAN INI PENTING! -->
     <title>Solar Panel Monitoring - @yield('title')</title>
     
     <!-- Tailwind CSS -->
@@ -74,9 +75,6 @@
     <!-- jsPDF untuk PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    
-    <!-- Custom JS -->
-    <script src="{{ asset('js/dummy-data.js') }}"></script>
     
     @stack('scripts')
 </body>
